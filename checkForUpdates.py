@@ -43,9 +43,13 @@ class Check():
                 for i in js['nodes']:
                     isNew = self.cacheContainsId(i['id'], self.lastContent)
                     if not isNew:
-                        updater.bot.sendMessage(chat_id=self.chatId,
+                        try:
+                            updater.bot.sendMessage(chat_id=self.chatId,
                                                 text="Neuer Knoten <a href=\"https://map.freifunk-hennef.de/#!v:m;n:{}\"\
                                                 >{}</a>".format(i['id'], i['name']), parse_mode="html")
+                        except KeyError:
+                            logging.error("es gab 1 fehler")
+                            logging.error(i)
 
             self.lastContent = js
 
