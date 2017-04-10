@@ -1,43 +1,3 @@
-# coding: utf-8
-import argparse
-import logging
-import os
-import json
-import requests
-from telegram.ext import Updater
-from time import sleep
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-
-class Check():
-    def __init__(self, authToken, url, chatId):
-        self.lastContent = ""
-        self.filePath = os.path.dirname(os.path.realpath(__file__)) + "\cache"
-        self.authToken = authToken
-        self.url = url
-        self.chatId = chatId
-
-    def cacheContainsId(self, id, cache):
-        for j in cache['nodes']:
-            if j['id'] == id:
-                return True
-        return False
-
-    def run(self):
-        while True:
-            if not os.path.isfile(self.filePath) or os.path.getsize(self.filePath) == 0:
-                with open(self.filePath, "w") as file:
-                    self.lastContent = json.loads(requests.get(self.url).text)
-                    json.dump(self.lastContent, file)
-            else:
-                with open(self.filePath, "r") as file:
-                    self.lastContent = json.load(file)
-
-            r = requests.get(self.url)
-            js = json.loads(r.text)
-
             if self.lastContent['nodes'] != js['nodes']:
                 updater = Updater(self.authToken)
                 for i in js['nodes']:
@@ -48,7 +8,6 @@ class Check():
                                                 text="Neuer Knoten <a href=\"https://map.freifunk-hennef.de/#!v:m;n:{}\"\
                                                 >{}</a>".format(i['id'], i['name']), parse_mode="html")
                         except KeyError:
-                            logging.error("es gab 1 fehler")
                             logging.error(i)
 
             self.lastContent = js
@@ -58,6 +17,23 @@ class Check():
 
             logging.info("Sleeping 60s")
             sleep(60)
+
+    def clients(self, b, u):
+        """
+
+        :type u: telegram.update.Update
+        :type b: telegram.bot.Bot
+        """
+        req = requests.get("https://map.freifunk-hennef.de/data/metrics")
+
+        clients = self.clientsReg.search(req.text).group(1)
+
+        b.send_message(chat_id=u.message.chat_id,
+                       text="Aktuelle Clients: *{}*".format(clients),
+                       reply_to_message_id=u.message.message_id,
+                       parse_mode=telegram.ParseMode.MARKDOWN)
+
+
 
 
 if __name__ == "__main__":
@@ -73,3 +49,6 @@ if __name__ == "__main__":
         exit()
 
     Check(parsed_args.token, parsed_args.url, parsed_args.chat).run()
+
+
+
